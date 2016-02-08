@@ -1,0 +1,15 @@
+[
+  {
+    "drink": {
+      "name": "string"
+    }
+  },
+  {
+    "user": {
+      "username": "string",
+      "password": "string",
+      "scopes": [
+      ]
+    }
+  }
+]

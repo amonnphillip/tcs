@@ -1,0 +1,22 @@
+{
+  "user": [
+    {
+      "username": "admin",
+      "password": "admin",
+      "scopes": [
+        "admin"
+      ]
+    }
+  ],
+  "drink": [
+    {
+      "name": "drink 1"
+    },
+    {
+      "name": "drink 2"
+    },
+    {
+      "name": "drink 3"
+    }
+  ]
+}

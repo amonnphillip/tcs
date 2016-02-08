@@ -1,0 +1,13 @@
+{
+  "name": "tcsadmin",
+  "description": "REST apis for admin tcs",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "form-data": "^1.0.0-rc3",
+    "kerberos": "0.0.18",
+    "mongoose": "^4.4.0",
+    "node-promise": "^0.5.12",
+    "restify": "^3.0.3"
+  }
+}

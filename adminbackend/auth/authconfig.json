@@ -1,0 +1,6 @@
+{
+  "cert": "certificate.pem",
+  "tokenExpire": "1h",
+  "jwtIssuer": "tcs.com",
+  "jwtSubject": ""
+}
