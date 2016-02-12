@@ -12,9 +12,30 @@ var noAuthRetCode = 401;
 
 module.exports = function() {
   return {
+    HTTPCodes: {
+      OK: {
+        code: 200,
+        message: 'ok'
+      },
+      GENERIC_ERROR: {
+        code: 400,
+        message: 'error',
+      },
+      NO_AUTH: {
+        code: 401,
+        message: 'not authorized'
+      },
+      AUTH_FAILED: {
+        code: 401,
+        message: 'authorized failed'
+      }
+    },
     useHTTPS: true,
     serverPort: 4301,
     server: '',
+    status: status, // TODO: Initialize this within this object?
+    auth: auth, // TODO: Initialize this within this object?
+    dbadmin: dbadmin, // TODO: Initialize this within this object?
     initializeServer: function() {
       if (this.useHTTPS) {
         this.server = restify.createServer({
@@ -30,6 +51,7 @@ module.exports = function() {
       }
 
       this.server.use(restify.queryParser());
+      this.server.use(restify.bodyParser());
       this.server.use(
         function crossOrigin(req,res,next){
           res.header("Access-Control-Allow-Origin", "*");
@@ -59,76 +81,64 @@ module.exports = function() {
         return next();
       });
 
-      this.server.get('/api/login', function(req, res, next) {
+      this.server.post('/api/login', function(req, res, next) {
         console.log('/api/login');
-        auth.createToken().then(function(token) {
-          res.send(200, token);
-        }).catch(function() {
-          res.send(200, 'error!'); // TODO: Return some kind of error
-        });
-        return next();
-      });
 
-      this.server.get('/api/dosomething', function(req, res, next) {
-        console.log('/api/login');
-        if (typeof req.headers.authorization !== 'undefined') {
-          auth.verify(req.headers.authorization).then(function(authRes) {
-            res.header('Authorization', authRes.token);
-            res.send(200, authRes.token);
-          }).catch(function() {
-            res.send(200, 'error!'); // TODO: Return some kind of error
-          });
-        } else {
-          // No authorization
-          res.send(200, 'error!'); // TODO: Return some kind of error
+        if (typeof req.body.username !== 'undefined' &&
+          typeof req.body.password !== 'undefined') {
+          this.dbadmin.getUserByUserName(req.body.username).then(function(user) {
+            return auth.createToken(user.username, user.id, user.scopes);
+          }.bind(this)).then(function(token) {
+            res.send(this.HTTPCodes.OK.code, token);
+          }.bind(this)).catch(function(err) {
+            res.send(this.HTTPCodes.AUTH_FAILED.code, this.HTTPCodes.AUTH_FAILED.message + ' ' + err);
+          }.bind(this));
         }
 
         return next();
-      });
+      }.bind(this));
 
-      this.server.get('/api/scope', function(req, res, next) {
-        console.log('/api/scope');
-        if (typeof req.headers.authorization !== 'undefined') {
-          auth.verify(req.headers.authorization).then(function(authRes) {
-            var d = auth.hasScope(authRes.decoded, 'user'); // Check we have the scope... Will remove
-            res.send(200, d);
-          }).catch(function() {
-            res.send(200, 'error!'); // TODO: Return some kind of error
-          });
-        } else {
-          // No authorization
-          res.send(200, 'error!'); // TODO: Return some kind of error
-        }
-      });
+      this.server.get('/api/scopecheck', function(req, res, next) {
+        console.log('/api/scopecheck');
+        this.verifyTokenAndScope(req, res, next, 'any', function(req, res, next, decodedToken) {
+          res.send(this.HTTPCodes.OK.code, decodedToken.scopes);
+        }.bind(this));
+      }.bind(this));
 
       this.server.get('/api/seeddb', function(req, res, next) {
         console.log('/api/seeddb');
-        if (typeof req.headers.authorization !== 'undefined') {
-          auth.verify(req.headers.authorization).then(function(authRes) {
-            if (auth.hasScope(authRes.decoded, 'any')) {
-              // Authorization ok
-              dbadmin.seedDb().then(function(m) {
-                console.log(m);
-                res.send(okRetCode);
-              });
-            } else {
-              // Authorization header from user does not have scope to do this
-              res.send(noAuthRetCode);
-            }
-          }).catch(function() {
-            // Authorization header mismatch
-            res.send(noAuthRetCode);
-          });
-        } else {
-          // No authorization header
-          res.send(noAuthRetCode);
-        }
-      });
+        this.verifyTokenAndScope(req, res, next, 'admin', function(req, res, next, decodedToken) {
+          dbadmin.seedDb().then(function(result) {
+            res.send(this.HTTPCodes.OK.code);
+          }.bind(this)).catch(function(result) {
+            res.send(thie.HTTPCodes.GENERIC_ERROR.code, result);
+          }.bind(this));
+        }.bind(this));
+      }.bind(this));
 
 
       this.server.listen(this.serverPort, function() {
         console.log('%s listening at %s', this.server.name, this.server.url);
       }.bind(this));
+    },
+    verifyTokenAndScope: function(req, res, next, expectedScope, authOkFunction) {
+      if (typeof req.headers.authorization !== 'undefined') {
+        auth.verify(req.headers.authorization).then(function(authRes) {
+          if (auth.hasScope(authRes.decoded, expectedScope)) {
+            // Authorization ok
+            authOkFunction(req, res, next, authRes.decoded);
+          } else {
+            // Authorization header from user does not have scope to do this
+            res.send(noAuthRetCode);
+          }
+        }).catch(function() {
+          // Authorization header mismatch
+          res.send(noAuthRetCode);
+        });
+      } else {
+        // No authorization header
+        res.send(noAuthRetCode);
+      }
     }
   }
 };

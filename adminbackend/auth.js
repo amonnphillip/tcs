@@ -6,12 +6,7 @@ var fs = require('fs');
 // TODO: how to handle logout? <<- use a redis database, or local array if we have one instance!!
 // TODO: how to handle password change? <<-- use redis db!
 // TODO: how to stop a token being used by more than one user?
-
-/*
-When user logs in generate a token and set the user record as logged in
-At each request verify token. If token could not be verified return 401
-if token has expired check user is logged in and generate a new token if user is indeed still logged in. If user is logged out return 401
-*/
+// Is it up to the user to keep their token secure? Would solve a bunch of problems...
 
 module.exports = function() {
   return {
@@ -20,27 +15,24 @@ module.exports = function() {
       var config = fs.readFileSync('./auth/authconfig.json', 'utf8');
       this.config = JSON.parse(config);
 
-      this.cert = fs.readFileSync('./auth/' + this.config.cert, 'utf8');
+      this.publickey = fs.readFileSync('./auth/' + this.config.publickey, 'utf8');
+      this.privatekey = fs.readFileSync('./auth/' + this.config.privatekey, 'utf8');
       console.log('Auth initialised');
     },
-    createToken: function(userName, userPassword) {
-      // TODO: Verify un and password
-
-      var accountId = 0; // TODO: Get accountId
-      var scopes = ['user']; // TODO: Get user scopes
-
-      return this.sign(accountId, scopes);
+    createToken: function(userName, accountId, scopes) {
+      return this.sign(userName, accountId, scopes);
     },
-    sign: function(accountId, scopes) {
+    sign: function(userName, accountId, scopes) {
       return new Promise(function(resolve, reject) {
         jwt.sign({
+          userName: userName,
           accountId: accountId,
           scopes: scopes
-        }, this.cert, {
+        }, this.privatekey, {
           expiresIn: this.config.tokenExpire,
           issuer: this.config.jwtIssuer,
           subject: this.config.jwtSubject,
-          algorithm: 'RS512'
+          algorithm: 'RS256'
         }, function(token) {
           resolve(token);
         });
@@ -50,7 +42,7 @@ module.exports = function() {
       token = token.replace('Bearer ', '');
       token = token.replace('bearer ', '');
       return new Promise(function(resolve, reject) {
-        jwt.verify(token, this.cert, {algorithm: 'RS512'}, function(err, decoded) {
+        jwt.verify(token, this.publickey, {algorithm: 'RS256'}, function(err, decoded) {
           if (err) {
             console.log('Auth token verify failed, ' + err.message);
             reject(err.message);

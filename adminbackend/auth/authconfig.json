@@ -1,6 +1,7 @@
 {
-  "cert": "certificate.pem",
+  "privatekey": "certificate.key",
+  "publickey": "certificate.crt",
   "tokenExpire": "1h",
   "jwtIssuer": "tcs.com",
-  "jwtSubject": ""
+  "jwtSubject": "something"
 }

@@ -21,12 +21,45 @@ module.exports = function() {
           reject();
         }.bind(this));
         mongoose.connection.once('open', function() {
+          // We are initialised so create the schemas and models for later use
+          this.createSchemaAndModels();
+
           this.isInitialized = true;
           console.log('Connected to db ' + this.mongoConfig.db);
           resolve();
         }.bind(this));
       }.bind(this));
       return promise;
+    },
+    createSchemaAndModels: function() {
+      var schemas = fs.readFileSync('./data/schemas.json', 'utf8');
+      schemas = JSON.parse(schemas);
+
+      // TODO: Remove old schemas and models?
+
+      this.schemas = [];
+      this.models = [];
+
+      schemas.forEach(function(schema) {
+        var schemaName;
+        for (var prop in schema) {
+          if (schema.hasOwnProperty(prop)) {
+            schemaName = prop;
+            break;
+          }
+        }
+
+        if (schemaName) {
+          if (typeof this.schemas[schemaName] === 'undefined') {
+            var schemaTemplate = schema[schemaName];
+            this.schemas[schemaName] = mongoose.Schema(schemaTemplate);
+          }
+
+          if (typeof this.models[schemaName] === 'undefined') {
+            this.models[schemaName] = mongoose.model(schemaName, this.schemas[schemaName]);
+          }
+        }
+      }.bind(this));
     },
     removeCollection: function(collectionName) {
       var promise = new Promise(function(resolve, reject) {
@@ -124,15 +157,6 @@ module.exports = function() {
               }
 
               if (schemaName) {
-                if (typeof this.schemas[schemaName] === 'undefined') {
-                  var schemaTemplate = schema[schemaName];
-                  this.schemas[schemaName] = mongoose.Schema(schemaTemplate);
-                }
-
-                if (typeof this.models[schemaName] === 'undefined') {
-                  this.models[schemaName] = mongoose.model(schemaName, this.schemas[schemaName]);
-                }
-
                 if (typeof models[schemaName] !== 'undefined') {
                   models[schemaName].forEach(function(model) {
                     var tempModel = new this.models[schemaName](model);
@@ -165,6 +189,29 @@ module.exports = function() {
         }
       }.bind(this));
       return promise;
+    },
+    getUserByUserName: function(userName) {
+      return new Promise(function(resolve, reject) {
+        if (typeof this.models.user !== 'undefined') {
+          this.models.user.find({
+            username: userName
+          }, function(err, users) {
+            if (err) {
+              reject('user model not found');
+            } else {
+              if (users.length === 0) {
+                reject('user not found');
+              } else if (users.length === 1) {
+                resolve(users[0]);
+              } else if (users.length > 1) {
+                reject('too many users with the same id');
+              }
+            }
+          }.bind(this));
+        } else {
+          reject('user model has not been defined');
+        }
+      }.bind(this));
     }
   }
 };
