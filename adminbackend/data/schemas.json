@@ -5,6 +5,12 @@
     }
   },
   {
+    "layout": {
+      "name": "string",
+      "date": "date"
+    }
+  },
+  {
     "user": {
       "username": "string",
       "password": "string",
