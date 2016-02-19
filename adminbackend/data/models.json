@@ -19,5 +19,16 @@
     {
       "name": "drink 3"
     }
+  ],
+  "ingredient": [
+    {
+      "name": "vodka"
+    },
+    {
+      "name": "rum"
+    },
+    {
+      "name": "calvados pomme"
+    }
   ]
 }

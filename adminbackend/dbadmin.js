@@ -2,6 +2,8 @@
 var mongoose = require('mongoose');
 var fs = require('fs');
 
+// TODO: Schema.json has empty objects
+
 module.exports = function() {
   return {
     isInitialized: false,
@@ -85,12 +87,11 @@ module.exports = function() {
       var promise = new Promise(function(resolve, reject) {
         var promises = [];
 
-        var collections = fs.readFileSync('./data/collections.json', 'utf8');
-        collections = JSON.parse(collections);
-
-        collections.forEach(function(item) {
-          promises.push(this.removeCollection(item));
-        }.bind(this));
+        for (var prop in this.schemas) {
+          if (this.schemas.hasOwnProperty(prop)) {
+            promises.push(this.removeCollection(prop + 's'));
+          }
+        }
 
         Promise.all(promises).then(function () {
           console.log('All collections removed');
@@ -120,12 +121,11 @@ module.exports = function() {
       var promise = new Promise(function(resolve, reject) {
         var promises = [];
 
-        var collections = fs.readFileSync('./data/collections.json', 'utf8');
-        collections = JSON.parse(collections);
-
-        collections.forEach(function(item) {
-          promises.push(this.createCollection(item));
-        }.bind(this));
+        for (var prop in this.schemas) {
+          if (this.schemas.hasOwnProperty(prop)) {
+            promises.push(this.createCollection(prop + 's'));
+          }
+        }
 
         Promise.all(promises).then(function () {
           console.log('All collections created');
@@ -326,6 +326,38 @@ module.exports = function() {
     },
     deleteLayout: function(layoutId) {
       return this.deleteModelById(layoutId, 'layout');
-    }
+    },
+
+    getDrinks: function() {
+      return this.getModels('drink');
+    },
+    getDrink: function(drinkId) {
+      return this.getModelById(drinkId, 'drink');
+    },
+    postDrink: function(model) {
+      return this.postModel(model, 'drink');
+    },
+    putDrink: function(model, drinkId) {
+      return this.putModelById(model, drinkId, 'drink');
+    },
+    deleteDrink: function(drinkId) {
+      return this.deleteModelById(drinkId, 'drink');
+    },
+
+    getIngredients: function() {
+      return this.getModels('ingredient');
+    },
+    getIngredient: function(ingredientId) {
+      return this.getModelById(ingredientId, 'ingredient');
+    },
+    postIngredient: function(model) {
+      return this.postModel(model, 'ingredient');
+    },
+    putIngredient: function(model, ingredientId) {
+      return this.putModelById(model, ingredientId, 'ingredient');
+    },
+    deleteIngredient: function(ingredientId) {
+      return this.deleteModelById(ingredientId, 'ingredient');
+    },
   }
 };

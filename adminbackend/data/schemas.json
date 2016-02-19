@@ -1,21 +1,18 @@
 [
   {
     "drink": {
-      "name": "string"
+    }
+  },
+  {
+    "ingredient": {
     }
   },
   {
     "layout": {
-      "name": "string",
-      "date": "date"
     }
   },
   {
     "user": {
-      "username": "string",
-      "password": "string",
-      "scopes": [
-      ]
     }
   }
 ]
