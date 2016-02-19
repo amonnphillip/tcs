@@ -4,7 +4,8 @@
       "username": "admin",
       "password": "admin",
       "scopes": [
-        "admin"
+        "admin",
+        "user"
       ]
     }
   ],

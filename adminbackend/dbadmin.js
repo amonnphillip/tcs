@@ -31,11 +31,17 @@ module.exports = function() {
       }.bind(this));
       return promise;
     },
+    updateModel: function(srcModel, schema, targetModel) {
+      for (var prop in schema.paths) {
+        if (prop !== '_id' &&
+          prop !== '__v') {
+          targetModel[prop] = srcModel[prop];
+        }
+      }
+    },
     createSchemaAndModels: function() {
       var schemas = fs.readFileSync('./data/schemas.json', 'utf8');
       schemas = JSON.parse(schemas);
-
-      // TODO: Remove old schemas and models?
 
       this.schemas = [];
       this.models = [];
@@ -51,7 +57,7 @@ module.exports = function() {
 
         if (schemaName) {
           if (typeof this.schemas[schemaName] === 'undefined') {
-            var schemaTemplate = schema[schemaName];
+            var schemaTemplate = require('./models/' + schemaName + "Model.js")();
             this.schemas[schemaName] = mongoose.Schema(schemaTemplate);
           }
 
@@ -212,6 +218,114 @@ module.exports = function() {
           reject('user model has not been defined');
         }
       }.bind(this));
+    },
+    getModels: function(modelName) {
+      return new Promise(function(resolve, reject) {
+        if (typeof this.models[modelName] !== 'undefined') {
+          this.models[modelName].find({
+          }, function (err, models) {
+            if (err) {
+              reject(modelName + ' model not found');
+            } else {
+              if (models.length === 0) {
+                reject(modelName + ' not found');
+              } else if (models.length > 0) {
+                resolve(models);
+              }
+            }
+          }.bind(this));
+        } else {
+          reject(modelName + ' model has not been defined');
+        }
+      }.bind(this));
+    },
+    getModelById: function(id, modelName) {
+      return new Promise(function(resolve, reject) {
+        if (typeof this.models[modelName] !== 'undefined') {
+          this.models[modelName].find({
+            _id: id
+          }, function (err, models) {
+            if (err) {
+              reject(modelName + ' model not found');
+            } else {
+              if (models.length === 0) {
+                reject(modelName + ' not found');
+              } else if (models.length === 1) {
+                resolve(models[0]);
+              } else if (models.length > 1) {
+                reject(modelName + ': too many with the same name');
+              }
+            }
+          }.bind(this));
+        } else {
+          reject(modelName + ' model has not been defined');
+        }
+      }.bind(this));
+    },
+    postModel: function(model, modelName) {
+      return new Promise(function(resolve, reject) {
+        if (typeof this.models[modelName] !== 'undefined') {
+          var tempModel = new this.models[modelName](model);
+          tempModel.save(function(err, retModel) {
+            if (err) {
+              reject(modelName + ' model not be saved');
+            } else {
+              resolve(retModel);
+            }
+          });
+        }
+      }.bind(this));
+    },
+    putModelById: function(model, id, modelName) {
+      return new Promise(function(resolve, reject) {
+        if (typeof this.models[modelName] !== 'undefined') {
+          this.models[modelName].findById(id, function(err, foundModel) {
+            if (err) {
+              reject(modelName + ' model could not be saved');
+            } else {
+              var schema = foundModel.schema;
+              this.updateModel(model, schema, foundModel);
+              foundModel.save(function(err, retModel) {
+                if (err) {
+                  reject(modelName + ' model could not be saved');
+                } else {
+                  resolve(retModel);
+                }
+              }.bind(this));
+            }
+          }.bind(this));
+        }
+      }.bind(this));
+    },
+    deleteModelById: function(id, modelName) {
+      return new Promise(function(resolve, reject) {
+        if (typeof this.models[modelName] !== 'undefined') {
+          this.models[modelName].remove({
+            _id: id
+          }, function(err) {
+            if (err) {
+              reject(modelName + ' model could not be deleted');
+            } else {
+              resolve();
+            }
+          })
+        }
+      }.bind(this));
+    },
+    getLayouts: function() {
+      return this.getModels('layout');
+    },
+    getLayout: function(layoutId) {
+      return this.getModelById(layoutId, 'layout');
+    },
+    postLayout: function(model) {
+      return this.postModel(model, 'layout');
+    },
+    putLayout: function(model, layoutId) {
+      return this.putModelById(model, layoutId, 'layout');
+    },
+    deleteLayout: function(layoutId) {
+      return this.deleteModelById(layoutId, 'layout');
     }
   }
 };

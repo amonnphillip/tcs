@@ -19,7 +19,7 @@ module.exports = function() {
       },
       GENERIC_ERROR: {
         code: 400,
-        message: 'error',
+        message: 'error'
       },
       NO_AUTH: {
         code: 401,
@@ -111,11 +111,106 @@ module.exports = function() {
           dbadmin.seedDb().then(function(result) {
             res.send(this.HTTPCodes.OK.code);
           }.bind(this)).catch(function(result) {
-            res.send(thie.HTTPCodes.GENERIC_ERROR.code, result);
+            res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
           }.bind(this));
         }.bind(this));
       }.bind(this));
 
+      /*
+      this.server.get('/api/layout', function(req, res, next) {
+        console.log('/api/layout');
+        this.verifyTokenAndScope(req, res, next, 'admin', function(req, res, next, decodedToken) {
+          dbadmin.getLayouts().then(function(result) {
+            res.send(this.HTTPCodes.OK.code, result);
+          }.bind(this)).catch(function(result) {
+            res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
+          }.bind(this));
+        }.bind(this));
+      }.bind(this));
+
+      this.server.get('/api/layout/:id', function(req, res, next) {
+        console.log('/api/layout/' + req.params.id);
+        this.verifyTokenAndScope(req, res, next, 'admin', function(req, res, next, decodedToken) {
+          // TODO: verify body
+          dbadmin.getLayout(req.params.id).then(function(result) {
+            res.send(this.HTTPCodes.OK.code, result);
+          }.bind(this)).catch(function(result) {
+            res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
+          }.bind(this));
+        }.bind(this));
+      }.bind(this));
+
+      this.server.post('/api/layout', function(req, res, next) {
+        console.log('/api/layout');
+        this.verifyTokenAndScope(req, res, next, 'admin', function(req, res, next, decodedToken) {
+          // TODO: verify body
+          dbadmin.postLayout(req.body).then(function(result) {
+            res.send(this.HTTPCodes.OK.code, result);
+          }.bind(this)).catch(function(result) {
+            res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
+          }.bind(this));
+        }.bind(this));
+      }.bind(this));
+
+      this.server.put('/api/layout/:id', function(req, res, next) {
+        console.log('/api/layout');
+        this.verifyTokenAndScope(req, res, next, 'admin', function(req, res, next, decodedToken) {
+          // TODO: verify body
+          dbadmin.putLayout(req.body, req.params.id).then(function(result) {
+            res.send(this.HTTPCodes.OK.code, result);
+          }.bind(this)).catch(function(result) {
+            res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
+          }.bind(this));
+        }.bind(this));
+      }.bind(this));
+
+      this.server.del('/api/layout/:id', function(req, res, next) {
+        console.log('DELETE /api/layout');
+        this.verifyTokenAndScope(req, res, next, 'admin', function(req, res, next, decodedToken) {
+          // TODO: verify body
+          dbadmin.deleteLayout(req.params.id).then(function(result) {
+            res.send(this.HTTPCodes.OK.code, result);
+          }.bind(this)).catch(function(result) {
+            res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
+          }.bind(this));
+        }.bind(this));
+      }.bind(this));
+*/
+
+
+      this.createApi = function(verb, url, restriction, action) {
+        this.server[verb](url, function(req, res, next) {
+          console.log(verb + ' ' + url);
+          this.verifyTokenAndScope(req, res, next, restriction, function(req, res, next, decodedToken) {
+            // TODO: verify body
+            action(req, res, next).then(function(result) {
+              res.send(this.HTTPCodes.OK.code, result);
+            }.bind(this)).catch(function(result) {
+              res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
+            }.bind(this));
+          }.bind(this));
+        }.bind(this));
+      };
+
+      this.createApi('get', '/api/layout', 'admin', function(req, res, next) {
+        return dbadmin.getLayouts();
+      }.bind(this));
+
+      this.createApi('get', '/api/layout/:id', 'admin', function(req, res, next) {
+        return dbadmin.getLayout(req.params.id);
+      }.bind(this));
+
+      this.createApi('post', '/api/layout', 'admin', function(req, res, next) {
+        return dbadmin.postLayout(req.body);
+      }.bind(this));
+
+      this.createApi('put', '/api/layout/:id', 'admin', function(req, res, next) {
+        return dbadmin.putLayout(req.body, req.params.id);
+      }.bind(this));
+
+      this.createApi('del', '/api/layout/:id', 'admin', function(req, res, next) {
+        return dbadmin.deleteLayout(req.params.id);
+      }.bind(this));
 
       this.server.listen(this.serverPort, function() {
         console.log('%s listening at %s', this.server.name, this.server.url);
