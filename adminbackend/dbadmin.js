@@ -55,6 +55,7 @@ module.exports = function() {
       console.log('Shutting down');
       return new Promise(function(resolve, reject) {
         this.closeConnection().then(function() {
+          // TODO: DO I NEED TO DO ALL THIS??
           delete this.mongoose;
 
           for (var prop in this.schemas) {
@@ -69,8 +70,8 @@ module.exports = function() {
             }
           }
 
-          this.models = [];
-          this.schemas = [];
+          this.models = {};
+          this.schemas = {};
 
           this.isInitialized = false;
 
@@ -126,8 +127,8 @@ module.exports = function() {
       var schemas = fs.readFileSync('./data/schemas.json', 'utf8');
       schemas = JSON.parse(schemas);
 
-      this.schemas = [];
-      this.models = [];
+      this.schemas = {};
+      this.models = {};
 
       schemas.forEach(function(schema) {
         var schemaName;
@@ -294,23 +295,12 @@ module.exports = function() {
             return this.initialize();
           }.bind(this)).then(function() {
 
-            var schemas = fs.readFileSync('./data/schemas.json', 'utf8');
-            schemas = JSON.parse(schemas);
-
             var models = fs.readFileSync('./data/models.json', 'utf8');
             models = JSON.parse(models);
 
-// TODO: We have already parsed schemas.json at this point!
-            schemas.forEach(function(schema) {
-              var schemaName;
-              for (var prop in schema) {
-                if (schema.hasOwnProperty(prop)) {
-                  schemaName = prop;
-                  break;
-                }
-              }
-
-              if (schemaName) {
+            // Create the models we want to seed in the db
+            for (var schemaName in this.schemas) {
+              if (this.schemas.hasOwnProperty(schemaName)) {
                 if (!(fullSeed && schemaName === 'user')) {
                   if (typeof models[schemaName] !== 'undefined') {
                     models[schemaName].forEach(function(model) {
@@ -320,25 +310,25 @@ module.exports = function() {
                   }
                 }
               }
-
-            }.bind(this));
+            }
 
             if (modelPromises.length > 0) {
               Promise.all(modelPromises).then(function() {
                 return this.ensureAllIndexes();
               }.bind(this)).then(function() {
-                console.log('Database seeded db');
+                console.log('Database seeded');
                 resolve();
-              }.bind(this)).catch(function() {
-                console.log('Error seeding db');
+              }.bind(this)).catch(function(err) {
+                console.log('Error seeding db' + err);
                 reject();
               }.bind(this));
             } else {
+              console.log('Database seeded');
               resolve();
             }
 
           }.bind(this)).catch(function(err) {
-            console.log('Error seeding db');
+            console.log('Error seeding db ' + err);
             reject();
           }.bind(this));
         } else {

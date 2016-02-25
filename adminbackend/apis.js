@@ -212,15 +212,15 @@ module.exports = function() {
             authOkFunction(req, res, next, authRes.decoded);
           } else {
             // Authorization header from user does not have scope to do this
-            res.send(noAuthRetCode);
+            res.send(this.HTTPCodes.NO_AUTH.code, this.HTTPCodes.NO_AUTH.message);
           }
-        }).catch(function() {
+        }.bind(this)).catch(function() {
           // Authorization header mismatch
-          res.send(noAuthRetCode);
-        });
+          res.send(this.HTTPCodes.NO_AUTH.code, this.HTTPCodes.NO_AUTH.message);
+        }.bind(this));
       } else {
         // No authorization header
-        res.send(noAuthRetCode);
+        res.send(this.HTTPCodes.NO_AUTH.code, this.HTTPCodes.NO_AUTH.message);
       }
     }
   }
