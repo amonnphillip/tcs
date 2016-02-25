@@ -1,7 +1,7 @@
 {
   "privatekey": "certificate.key",
   "publickey": "certificate.crt",
-  "tokenExpire": "1h",
+  "tokenExpire": "24h",
   "jwtIssuer": "tcs.com",
   "jwtSubject": "something"
 }

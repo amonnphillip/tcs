@@ -3,7 +3,14 @@ var mongoose = require('mongoose');
 
 module.exports = function() {
   return {
-    name: String,
-    date: Date
+    getSchemaIndexes: function() {
+      return [];
+    },
+    getSchemaTemplate: function() {
+      return {
+        name: String,
+        date: Date
+      }
+    }
   }
 };

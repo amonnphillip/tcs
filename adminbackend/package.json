@@ -6,7 +6,7 @@
   "dependencies": {
     "form-data": "^1.0.0-rc3",
     "kerberos": "0.0.18",
-    "mongoose": "^4.4.0",
+    "mongoose": "4.4.4",
     "node-promise": "^0.5.12",
     "restify": "^3.0.3",
     "jsonwebtoken": "^5.5.4"

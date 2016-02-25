@@ -174,7 +174,13 @@ module.exports = function() {
 
 
       this.createApi('get', '/api/ingredient', 'admin', function(req, res, next) {
-        return dbadmin.getIngredients();
+        if (typeof req.params !== 'undefined' &&
+          typeof req.params.name !== 'undefined') {
+          return dbadmin.getIngredientsByQuery(req.params.name);
+        } else {
+          // TODO: Should you be able to get ALL models?
+          return dbadmin.getIngredients();
+        }
       }.bind(this));
 
       this.createApi('get', '/api/ingredient/:id', 'admin', function(req, res, next) {
