@@ -6,10 +6,6 @@ var status = require('./status')();
 var auth = require('./auth')();
 var dbadmin = require('./dbadmin')();
 
-var okRetCode = 200;
-var errorRetCode = 401;
-var noAuthRetCode = 401;
-
 module.exports = function() {
   return {
     HTTPCodes: {

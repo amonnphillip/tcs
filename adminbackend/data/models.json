@@ -9,26 +9,72 @@
       ]
     }
   ],
-  "drink": [
-    {
-      "name": "drink 1"
-    },
-    {
-      "name": "drink 2"
-    },
-    {
-      "name": "drink 3"
-    }
-  ],
   "ingredient": [
     {
-      "name": "vodka"
+      "name": "vodka",
+      "uov": "ml"
     },
     {
-      "name": "rum"
+      "name": "rum",
+      "uov": "ml"
     },
     {
-      "name": "calvados pomme"
+      "name": "calvados pomme",
+      "uov": "ml"
+    },
+    {
+      "name": "apple juice",
+      "uov": "ml"
+    }
+  ],
+  "drink": [
+    {
+      "name": "apple pie martini",
+      "ratings": {
+        "5": 1,
+        "4": 0,
+        "3": 0,
+        "2": 0,
+        "1": 0,
+        "0": 0
+      },
+      "ingredients": [
+
+      ]
+    },
+    {
+      "name": "run and coke",
+      "ratings": {
+        "5": 1,
+        "4": 0,
+        "3": 0,
+        "2": 0,
+        "1": 0,
+        "0": 0
+      },
+      "ingredients": [
+
+      ]
+    },
+    {
+      "modelRefs": [
+        {
+          "property": "ingredients",
+          "refModel": "ingredient",
+          "refQuery": { "name": "vodka" }
+        }
+      ],
+      "name": "vodka and something",
+      "ratings": {
+        "5": 1,
+        "4": 0,
+        "3": 0,
+        "2": 0,
+        "1": 0,
+        "0": 0
+      },
+      "ingredients": [
+      ]
     }
   ],
   "layout": [

@@ -9,7 +9,8 @@ module.exports = function() {
     },
     getSchemaTemplate: function() {
       return {
-        name: { type: String, text: true }
+        name: { type: String, text: true },
+        uov: String
       };
     }
   }

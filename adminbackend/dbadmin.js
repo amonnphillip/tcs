@@ -1,6 +1,7 @@
 "use strict";
 var mongoose = require('mongoose');
 var fs = require('fs');
+const vm = require('vm');
 
 // TODO: Schema.json has empty objects
 
@@ -18,7 +19,7 @@ module.exports = function() {
 
       this.mongoose = new mongoose.Mongoose();
 
-      var promise = new Promise(function(resolve, reject) {
+      return new Promise(function(resolve, reject) {
         var mongoConfig = fs.readFileSync('./data/mongo.json', 'utf8');
         this.mongoConfig = JSON.parse(mongoConfig);
 
@@ -33,23 +34,7 @@ module.exports = function() {
           reject();
         }.bind(this));
 
-
-        // TODO: DO I NEED THIS??
-        this.mongoose.connection.on('error', function(err) {
-          console.log('Error connecting to db ' + this.mongoConfig.db);
-        }.bind(this));
-
-
-        // TODO: DO I NEED THIS??
-        this.mongoose.connection.once('open', function() {
-          // We are initialised so create the schemas and models for later use
-          //this.createSchemaAndModels();
-          //this.isInitialized = true;
-          //console.log('Connected to db ' + this.mongoConfig.db);
-          //resolve();
-        }.bind(this));
       }.bind(this));
-      return promise;
     },
     shutdown: function() {
       console.log('Shutting down');
@@ -123,6 +108,23 @@ module.exports = function() {
         }
       }
     },
+    getSchemaNamesFromSchemaJson: function() {
+      var schemas = fs.readFileSync('./data/schemas.json', 'utf8');
+      schemas = JSON.parse(schemas);
+
+      var schemaNames = [];
+
+      schemas.forEach(function(schema) {
+        for (var prop in schema) {
+          if (schema.hasOwnProperty(prop)) {
+            schemaNames.push(prop);
+            break;
+          }
+        }
+      });
+
+      return schemaNames;
+    },
     createSchemaAndModels: function() {
       var schemas = fs.readFileSync('./data/schemas.json', 'utf8');
       schemas = JSON.parse(schemas);
@@ -172,7 +174,7 @@ module.exports = function() {
       }.bind(this));
     },
     removeCollection: function(collectionName) {
-      var promise = new Promise(function(resolve, reject) {
+      return new Promise(function(resolve, reject) {
         this.mongoose.connection.db.dropCollection(collectionName, function(err, result) {
           if (err && err.code !== 26) {
             console.log('Error removing collection ' + collectionName);
@@ -183,10 +185,9 @@ module.exports = function() {
           }
         });
       }.bind(this));
-      return promise;
     },
     removeAllCollections: function(fullSeed) {
-      var promise = new Promise(function(resolve, reject) {
+      return new Promise(function(resolve, reject) {
         var promises = [];
 
         for (var prop in this.schemas) {
@@ -205,10 +206,9 @@ module.exports = function() {
           reject();
         }.bind(this));
       }.bind(this));
-      return promise;
     },
     createCollection: function(collectionName) {
-      var promise = new Promise(function(resolve, reject) {
+      return new Promise(function(resolve, reject) {
         this.mongoose.connection.db.createCollection(collectionName, function(err, result) {
           if (err && err.code !== 26) {
             console.log('Error creating collection ' + collectionName);
@@ -219,10 +219,9 @@ module.exports = function() {
           }
         });
       }.bind(this));
-      return promise;
     },
     createAllCollections: function() {
-      var promise = new Promise(function(resolve, reject) {
+      return new Promise(function(resolve, reject) {
         var promises = [];
 
         for (var prop in this.schemas) {
@@ -239,7 +238,6 @@ module.exports = function() {
           reject();
         }.bind(this));
       }.bind(this));
-      return promise;
     },
     ensureIndexOnModel: function(modelName) {
       console.log('ensureIndexOnModel for model ' + modelName);
@@ -260,7 +258,7 @@ module.exports = function() {
       }.bind(this));
     },
     ensureAllIndexes: function() {
-      var promise = new Promise(function(resolve, reject) {
+      return new Promise(function(resolve, reject) {
         var modelPromises = [];
         for(var prop in this.models) {
           if (this.models.hasOwnProperty(prop)) {
@@ -273,17 +271,105 @@ module.exports = function() {
           resolve();
         }.bind(this)).catch(function() {
           console.log('Error building indexes');
-          reject();
+          reject('Error building indexes');
         });
       }.bind(this));
-      return promise;
+    },
+    resolveModelRefs: function(model, modelRefs) {
+      return new Promise(function(resolve, reject) {
+
+        var refs = [Promise.resolve()];
+        modelRefs.forEach(function(ref) {
+          refs.push(ref);
+        });
+
+        refs.reduce(function(prev, curr, index) {
+          return prev.then(function() {
+            return new Promise(function(resolve, reject) {
+              this.getModelByQuery(curr.refQuery, curr.refModel).then(function(data) {
+                data.forEach(function (foundModel) {
+                  if (typeof model[curr.property] !== 'undefined') {
+                    model[curr.property].push(foundModel._id);
+                  } else {
+                    reject('Property ' + curr.property + 'not found in model: ' + + JSON.stringify(model));
+                  }
+                });
+                model.save(function (err) {
+                  if (err) {
+                    reject('Unable to save model with reference ' + JSON.stringify(model));
+                  } else {
+                    resolve();
+                  }
+                });
+              }).catch(function(err) {
+                reject('Query for model reference failed: ' + JSON.stringify(model));
+              });
+            }.bind(this)).catch(function(err) {
+              throw err;
+            });
+          }.bind(this));
+        }.bind(this)).then(function() {
+
+          resolve();
+        }.bind(this)).catch(function(err) {
+
+          reject(err);
+        }.bind(this));
+
+      }.bind(this));
+    },
+    seedCollection: function(schemaName) {
+      console.log('Seeding collection ' + schemaName);
+
+      var models = fs.readFileSync('./data/models.json', 'utf8');
+      models = JSON.parse(models);
+
+      var modelPromises = [];
+      var collectionModels = {};
+
+      if (this.schemas.hasOwnProperty(schemaName)) {
+
+        collectionModels[schemaName] = [];
+
+        if (typeof models[schemaName] !== 'undefined') {
+          models[schemaName].forEach(function(model) {
+
+            var promise = new Promise(function(resolve, reject) {
+              this.models[schemaName].create(model, function(err, createdModel) {
+                if (err) {
+                  console.log('Error Seeding collection ' + schemaName + ' with error: ' + err);
+                  reject(err);
+                } else {
+                  if (typeof model.modelRefs !== 'undefined') {
+                    this.resolveModelRefs(createdModel, model.modelRefs).then(function() {
+                      resolve();
+                    }).catch(function(err) {
+                      console.log('Error seeding collection with error: ' + err + ' while creating reference');
+                      reject(err);
+                    });
+                  } else {
+                    resolve();
+                  }
+                }
+              }.bind(this));
+            }.bind(this));
+
+            modelPromises.push(promise);
+
+          }.bind(this));
+        }
+      }
+
+      return Promise.all(modelPromises);
     },
     seedDb: function(fullSeed) {
+      console.log('Seeing database');
+
+      var schemaOrder = this.getSchemaNamesFromSchemaJson();
+
       fullSeed = false;
 
-      var promise = new Promise(function(resolve, reject) {
-        var modelPromises = [];
-
+      return new Promise(function(resolve, reject) {
         if (this.isInitialized) {
           this.removeAllCollections(fullSeed).then(function() {
             return this.createAllCollections();
@@ -295,48 +381,43 @@ module.exports = function() {
             return this.initialize();
           }.bind(this)).then(function() {
 
-            var models = fs.readFileSync('./data/models.json', 'utf8');
-            models = JSON.parse(models);
-
-            // Create the models we want to seed in the db
-            for (var schemaName in this.schemas) {
+            // We do this to make sure the collections are created in an order specified in schema.json
+            var allSchemas = [];
+            allSchemas.push(Promise.resolve());
+            schemaOrder.forEach(function(schemaName) {
               if (this.schemas.hasOwnProperty(schemaName)) {
-                if (!(fullSeed && schemaName === 'user')) {
-                  if (typeof models[schemaName] !== 'undefined') {
-                    models[schemaName].forEach(function(model) {
-                      var tempModel = new this.models[schemaName](model);
-                      modelPromises.push(tempModel.save());
-                    }.bind(this));
-                  }
-                }
+                allSchemas.push(schemaName);
               }
-            }
+            }.bind(this));
 
-            if (modelPromises.length > 0) {
-              Promise.all(modelPromises).then(function() {
-                return this.ensureAllIndexes();
-              }.bind(this)).then(function() {
-                console.log('Database seeded');
-                resolve();
-              }.bind(this)).catch(function(err) {
-                console.log('Error seeding db' + err);
-                reject();
+            // create models for all the collections
+            allSchemas.reduce(function(prev, curr, index) {
+              return prev.then(function() {
+                return new Promise(function(resolve, reject) {
+                  this.seedCollection(curr).then(function() {
+                    resolve();
+                  }).catch(function(err) {
+                    reject(err);
+                  })
+                }.bind(this));
               }.bind(this));
-            } else {
-              console.log('Database seeded');
+            }.bind(this)).then(function() {
+              console.log('All models created');
               resolve();
-            }
+            }.bind(this)).catch(function(err) {
+              console.log('Error creating models ' + err);
+              reject(err);
+            }.bind(this));
 
           }.bind(this)).catch(function(err) {
-            console.log('Error seeding db ' + err);
-            reject();
+            console.log('Error seeding database ' + err);
+            reject(err);
           }.bind(this));
         } else {
-          console.log('Error seeding db');
-          reject();
+          console.log('Error seeding database, module not initialized');
+          reject('Error seeding database, module not initialized');
         }
       }.bind(this));
-      return promise;
     },
     getUserByUserName: function(userName) {
       return new Promise(function(resolve, reject) {
@@ -372,6 +453,25 @@ module.exports = function() {
               if (models.length === 0) {
                 reject(modelName + ' not found');
               } else if (models.length > 0) {
+                resolve(models);
+              }
+            }
+          }.bind(this));
+        } else {
+          reject(modelName + ' model has not been defined');
+        }
+      }.bind(this));
+    },
+    getModelByQuery: function(query, modelName) {
+      return new Promise(function(resolve, reject) {
+        if (typeof this.models[modelName] !== 'undefined') {
+          this.models[modelName].find(query, function (err, models) {
+            if (err) {
+              reject(modelName + ' model not found');
+            } else {
+              if (models.length === 0) {
+                reject(modelName + ' not found');
+              } else if (models.length >= 1) {
                 resolve(models);
               }
             }
@@ -494,6 +594,9 @@ module.exports = function() {
         }
       }.bind(this));
     },
+
+
+
     getLayouts: function() {
       return this.getModels('layout');
     },
@@ -544,5 +647,9 @@ module.exports = function() {
     getIngredientsByQuery: function(query) {
       return this.getModelsByTextQuery('ingredient', 'name', query);
     }
+
+    // Add Rating
+
+    //
   }
 };
