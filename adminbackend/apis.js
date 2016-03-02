@@ -149,7 +149,13 @@ module.exports = function() {
 
 
       this.createApi('get', '/api/drink', 'any', function(req, res, next) {
-        return dbadmin.getDrinks();
+        if (typeof req.params !== 'undefined' &&
+          typeof req.params.name !== 'undefined') {
+          return dbadmin.getDrinksByQuery(req.params.name);
+        } else {
+          // TODO: Should you be able to get ALL models?
+          return dbadmin.getDrinks();
+        }
       }.bind(this));
 
       this.createApi('get', '/api/drink/:id', 'admin', function(req, res, next) {
@@ -166,6 +172,14 @@ module.exports = function() {
 
       this.createApi('del', '/api/drink/:id', 'admin', function(req, res, next) {
         return dbadmin.deleteDrink(req.params.id);
+      }.bind(this));
+
+      this.createApi('put', '/api/drink/:id/rating', 'admin', function(req, res, next) {
+        if (typeof req.params !== 'undefined' &&
+          typeof req.params.id !== 'undefined' &&
+          typeof req.params.rating !== 'undefined') {
+          return dbadmin.putDrinkRating(req.params.id, req.params.rating);
+        }
       }.bind(this));
 
 

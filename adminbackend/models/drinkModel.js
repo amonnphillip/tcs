@@ -8,7 +8,7 @@ module.exports = function() {
     },
     getSchemaTemplate: function() {
       return {
-        name: String,
+        name: { type: String, text: true },
         ratings: {
           5: Number,
           4: Number,

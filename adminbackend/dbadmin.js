@@ -594,6 +594,23 @@ module.exports = function() {
         }
       }.bind(this));
     },
+    incrementModelRating: function(id, rating, modelName) {
+      // TODO: Check validity of rating
+      return new Promise(function(resolve, reject) {
+        this.getModelById(id, modelName).then(function (model) {
+          model.ratings[rating] ++;
+          model.save(function(err) {
+           if (err) {
+             reject(err);
+           } else {
+             resolve(model);
+           }
+          });
+        }.bind(this)).catch(function (err) {
+          reject(err);
+        });
+      }.bind(this));
+    },
 
 
 
@@ -628,6 +645,13 @@ module.exports = function() {
     deleteDrink: function(drinkId) {
       return this.deleteModelById(drinkId, 'drink');
     },
+    getDrinksByQuery: function(query) {
+      return this.getModelsByTextQuery('drink', 'name', query);
+    },
+    putDrinkRating: function(drinkId, rating) {
+      return this.incrementModelRating(drinkId, rating, 'drink');
+    },
+
 
     getIngredients: function() {
       return this.getModels('ingredient');
