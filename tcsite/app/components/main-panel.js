@@ -1,11 +1,11 @@
 import Ember from 'ember';
-//import mezr from 'mezr';
 
 export default Ember.Component.extend({
+  displayItems: [],
   onRendered: Ember.on('init', function() {
-    console.log();
-    var elem = Ember.$('#tcs-main-panel');
-    //debugger;
-    //console.log(window.mezr.width(elem));
+    this.set('displayItems', []);
+    this.get('displayItems').push('item1');
+    this.get('displayItems').push('item2');
+    this.get('displayItems').push('item3');
   })
 });
