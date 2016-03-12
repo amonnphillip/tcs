@@ -17,6 +17,10 @@ module.exports = function() {
         code: 400,
         message: 'error'
       },
+      SERVER_ERROR: {
+        code: 500,
+        message: 'server error'
+      },
       NO_AUTH: {
         code: 401,
         message: 'not authorized'
@@ -73,22 +77,28 @@ module.exports = function() {
       // APIs
       this.server.get('/api/status', function(req, res, next) {
         console.log('/api/status');
-        res.send(200, status.machineStatus());
+        res.send(this.HTTPCodes.OK.code, status.machineStatus());
         return next();
       });
 
       this.server.post('/api/login', function(req, res, next) {
         console.log('/api/login');
 
-        if (typeof req.body.username !== 'undefined' &&
-          typeof req.body.password !== 'undefined') {
-          this.dbadmin.getUserByUserName(req.body.username).then(function(user) {
-            return auth.createToken(user.username, user.id, user.scopes);
-          }.bind(this)).then(function(token) {
-            res.send(this.HTTPCodes.OK.code, token);
-          }.bind(this)).catch(function(err) {
-            res.send(this.HTTPCodes.AUTH_FAILED.code, this.HTTPCodes.AUTH_FAILED.message + ' ' + err);
-          }.bind(this));
+        if (this.dbadmin.isReady()) {
+          if (typeof req.body.username !== 'undefined' &&
+            typeof req.body.password !== 'undefined') {
+            this.dbadmin.getUserByUserName(req.body.username).then(function (user) {
+              return auth.createToken(user.username, user.id, user.scopes);
+            }.bind(this)).then(function (token) {
+              res.send(this.HTTPCodes.OK.code, token);
+            }.bind(this)).catch(function (err) {
+              res.send(this.HTTPCodes.AUTH_FAILED.code, this.HTTPCodes.AUTH_FAILED.message + ' ' + err);
+            }.bind(this));
+          } else {
+            res.send(this.HTTPCodes.GENERIC_ERROR.code, 'Invalid parameters');
+          }
+        } else {
+          res.send(this.HTTPCodes.SERVER_ERROR.code, 'Database is not ready');
         }
 
         return next();
@@ -96,35 +106,47 @@ module.exports = function() {
 
       this.server.get('/api/scopecheck', function(req, res, next) {
         console.log('/api/scopecheck');
-        this.verifyTokenAndScope(req, res, next, 'any', function(req, res, next, decodedToken) {
-          res.send(this.HTTPCodes.OK.code, decodedToken.scopes);
-        }.bind(this));
+        if (this.dbadmin.isReady()) {
+          this.verifyTokenAndScope(req, res, next, 'any', function (req, res, next, decodedToken) {
+            res.send(this.HTTPCodes.OK.code, decodedToken.scopes);
+          }.bind(this));
+        } else {
+          res.send(this.HTTPCodes.SERVER_ERROR.code, 'Database is not ready');
+        }
       }.bind(this));
 
       this.server.get('/api/seeddb', function(req, res, next) {
         console.log('/api/seeddb');
-        this.verifyTokenAndScope(req, res, next, 'admin', function(req, res, next, decodedToken) {
-          dbadmin.seedDb().then(function(result) {
-            res.send(this.HTTPCodes.OK.code);
-          }.bind(this)).catch(function(result) {
-            res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
+        if (this.dbadmin.isReady()) {
+          this.verifyTokenAndScope(req, res, next, 'admin', function (req, res, next, decodedToken) {
+            dbadmin.seedDb().then(function (result) {
+              res.send(this.HTTPCodes.OK.code);
+            }.bind(this)).catch(function (result) {
+              res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
+            }.bind(this));
           }.bind(this));
-        }.bind(this));
+        } else {
+          res.send(this.HTTPCodes.SERVER_ERROR.code, 'Database is not ready');
+        }
       }.bind(this));
 
 
       this.createApi = function(verb, url, restriction, verifySuccessFunc) {
         this.server[verb](url, function(req, res, next) {
           console.log(verb + ' ' + url);
-          this.verifyTokenAndScope(req, res, next, restriction, function(req, res, next, decodedToken) {
-            // TODO: verify body
-            verifySuccessFunc(req, res, next).then(function(result) {
-              res.send(this.HTTPCodes.OK.code, result);
-            }.bind(this)).catch(function(result) {
-              res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
+          if (this.dbadmin.isReady()) {
+            this.verifyTokenAndScope(req, res, next, restriction, function(req, res, next, decodedToken) {
+              // TODO: verify body
+              verifySuccessFunc(req, res, next).then(function(result) {
+                res.send(this.HTTPCodes.OK.code, result);
+              }.bind(this)).catch(function(result) {
+                res.send(this.HTTPCodes.GENERIC_ERROR.code, result);
+              }.bind(this));
             }.bind(this));
-          }.bind(this));
-        }.bind(this));
+          } else {
+            res.send(this.HTTPCodes.SERVER_ERROR.code, 'Database is not ready');
+          }
+      }.bind(this));
       };
 
       this.createApi('get', '/api/layout', 'admin', function(req, res, next) {

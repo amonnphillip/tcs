@@ -25,8 +25,9 @@ module.exports = function() {
 
         this.openConnection(this.mongoConfig.url + '/' + this.mongoConfig.db).then(function() {
           console.log('Connected to db ' + this.mongoConfig.db);
-          this.isInitialized = true;
           this.createSchemaAndModels();
+          console.log('Created schemas and model objects');
+          this.isInitialized = true;
           resolve();
         }.bind(this)).catch(function(err) {
           console.log('Error connecting to db ' + this.mongoConfig.db);
@@ -67,6 +68,9 @@ module.exports = function() {
           reject();
         }.bind(this))
       }.bind(this));
+    },
+    isReady: function() {
+      return this.isInitialized;
     },
     openConnection: function(url) {
       console.log('connecting');
