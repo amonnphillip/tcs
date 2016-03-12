@@ -1,4 +1,7 @@
 <div id="tcs-main-panel" class="tcs-main-panel">
 main panel!
+  {{#each item in displayItems}}
+    {{display-item item=item}}
+  {{/each}}
 </div>
 {{yield}}

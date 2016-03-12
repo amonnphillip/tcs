@@ -25,6 +25,12 @@ module.exports = function(defaults) {
   // along with the exports of each module as its value.
   app.import('bower_components/bootstrap/dist/js/bootstrap.js');
 
+  app.import('vendor/three.js', {
+    exports: {
+      'THREE': ['THREE']
+    }
+  });
+
 
   return app.toTree();
 };

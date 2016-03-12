@@ -38,5 +38,10 @@
     "ember-disable-proxy-controllers": "^1.0.1",
     "ember-export-application-global": "^1.0.4",
     "mongoose": "^4.4.0"
+  },
+  "ember-addon": {
+    "paths": [
+      "lib/ember-threejs"
+    ]
   }
 }
