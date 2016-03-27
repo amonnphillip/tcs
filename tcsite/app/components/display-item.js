@@ -4,6 +4,7 @@ import Ember from 'ember';
 export default Ember.Component.extend({
   threeScene: {},
   renderScene: function() {
+    /*
     this.threeScene = {};
     this.threeScene.scene = new THREE.Scene();
     this.threeScene.camera = new THREE.PerspectiveCamera( 75, this.element.clientWidth / this.element.clientHeight, 0.1, 1000 );
@@ -24,6 +25,7 @@ export default Ember.Component.extend({
       context.threeScene.renderer.render( context.threeScene.scene, context.threeScene.camera );
     }
     render(this);
+    */
   },
   didInsertElement: function() {
     Ember.run.scheduleOnce('afterRender', this, this.renderScene);
