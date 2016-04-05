@@ -1,0 +1,14 @@
+{
+  "name": "testserver",
+  "version": "1.0.0",
+  "description": "test server for tests",
+  "main": "testserver.js",
+  "scripts": {
+    "test": "node testserver.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "restify": "^4.0.4"
+  }
+}

@@ -1,1 +1,4 @@
 /adminbackend/node_modules
+/testserver/node_modules
+/tcsite/.idea
+/adminbackend/.idea
