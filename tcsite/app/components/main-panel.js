@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import Rest from 'rest';
 
 export default Ember.Component.extend({
   displayItems: [],
@@ -7,5 +8,7 @@ export default Ember.Component.extend({
     this.get('displayItems').push('item1');
     this.get('displayItems').push('item2');
     this.get('displayItems').push('item3');
+
+    Rest.get('')
   })
 });

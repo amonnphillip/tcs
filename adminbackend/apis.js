@@ -5,6 +5,7 @@ var restify = require('restify');
 var status = require('./status')();
 var auth = require('./auth')();
 var dbadmin = require('./dbadmin')();
+var cors = require('./cors');
 
 module.exports = function() {
   return {
@@ -36,6 +37,7 @@ module.exports = function() {
     status: status, // TODO: Initialize this within this object?
     auth: auth, // TODO: Initialize this within this object?
     dbadmin: dbadmin, // TODO: Initialize this within this object?
+    cors: '',
     initializeServer: function() {
       if (this.useHTTPS) {
         this.server = restify.createServer({
@@ -52,22 +54,18 @@ module.exports = function() {
 
       this.server.use(restify.queryParser());
       this.server.use(restify.bodyParser());
-      this.server.use(
-        function crossOrigin(req,res,next){
-          res.header("Access-Control-Allow-Origin", "*");
-          res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE");
-          res.header("Access-Control-Allow-Headers", "Cache-Control, Pragma, Origin, Authorization, Content-Type, X-Requested-With");
-          return next();
-        }
-      );
-
-      this.server.use(restify.CORS({
-        origins: ['*'],   // defaults to ['*']
+      /*
+      this.server.use(cors({
+        origins: ['*'],
         credentials: true,                 // defaults to false
-        headers: ['Cache-Control, Pragma, Origin, Authorization, Content-Type, X-Requested-With']
-      }));
-      this.server.use(restify.fullResponse());
+        headers: ['Cache-Control', 'Pragma', 'Origin', 'Authorization', 'Content-Type', 'X-Requested-With']
+      }));*/
+      //this.server.use(restify.fullResponse());
 
+      // cors
+      this.cors = cors();
+      this.server.use(this.cors.restifyCorsPlugin());
+      
       // auth initialization
       auth.initialize();
 
@@ -75,10 +73,17 @@ module.exports = function() {
       dbadmin.initialize(); // TODO: Should wait for promise to finish?
 
       // APIs
+      this.server.opts(/\/api\/.+/, (req, res, next) => {
+        console.log('/api/*');
+        //this.cors.opt(req, res, next);
+        res.send(this.HTTPCodes.OK.code);
+        next();
+      });
+
       this.server.get('/api/status', function(req, res, next) {
         console.log('/api/status');
         res.send(this.HTTPCodes.OK.code, status.machineStatus());
-        return next();
+        next();
       });
 
       this.server.post('/api/login', function(req, res, next) {
@@ -91,17 +96,19 @@ module.exports = function() {
               return auth.createToken(user.username, user.id, user.scopes);
             }.bind(this)).then(function (token) {
               res.send(this.HTTPCodes.OK.code, token);
+              next();
             }.bind(this)).catch(function (err) {
               res.send(this.HTTPCodes.AUTH_FAILED.code, this.HTTPCodes.AUTH_FAILED.message + ' ' + err);
+              next();
             }.bind(this));
           } else {
             res.send(this.HTTPCodes.GENERIC_ERROR.code, 'Invalid parameters');
+            next();
           }
         } else {
           res.send(this.HTTPCodes.SERVER_ERROR.code, 'Database is not ready');
+          next();
         }
-
-        return next();
       }.bind(this));
 
       this.server.get('/api/scopecheck', function(req, res, next) {
